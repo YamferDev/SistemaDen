@@ -12,7 +12,6 @@ public class DatabaseConnection {
 
     private static Connection connection;
 
-    // Método principal para obtener la conexión (Estático)
     public static Connection getConnection() {
         try {
             if (connection == null || connection.isClosed()) {
@@ -26,7 +25,6 @@ public class DatabaseConnection {
 
     private static void loadAndConnect() {
         try {
-            // Cargar propiedades
             Properties prop = new Properties();
             try (InputStream input = DatabaseConnection.class.getClassLoader().getResourceAsStream("application.properties")) {
                 if (input != null) prop.load(input);
@@ -39,7 +37,6 @@ public class DatabaseConnection {
             connection = DriverManager.getConnection(url, user, password);
             System.out.println("Conexión a H2 exitosa.");
 
-            // Ejecutar script si es necesario
             if (Boolean.parseBoolean(prop.getProperty("db.ddl.auto", "true"))) {
                 runDdlScript(prop.getProperty("db.ddl.script", "schema.sql"));
             }
