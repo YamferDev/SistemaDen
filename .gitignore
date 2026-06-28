@@ -1,0 +1,12 @@
+"data/*.mv.db" 
+"data/*.trace.db"
+/uploads/
+*.db
+/target/
+.idea/
+.settings/
+.project
+.classpath
+*.log
+*.mv.db
+*.trace.db
