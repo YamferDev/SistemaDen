@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import pe.edu.upeu.sysdenuncias.enums.Especialidad;
 
 @Data
 @Builder
@@ -17,4 +17,5 @@ public class TipoDenuncia {
 
     @NotBlank(message = "El nombre del tipo de denuncia es obligatorio")
     private String nombre;
-}
+
+    private Especialidad areaEncargada;}

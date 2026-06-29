@@ -21,6 +21,15 @@
 
         <Label text="Cargo:" />
         <ComboBox fx:id="cbxCargo" prefWidth="260" promptText="Seleccione cargo" />
+        <Label fx:id="lblEspecialidad"
+               text="Especialidad:"
+               visible="false"
+               managed="false"/>
+
+        <ComboBox fx:id="cbxEspecialidad"
+                  visible="false"
+                  managed="false"
+                  prefWidth="260"/>
     <Label text="Credenciales (Contraseña):" />
     <HBox spacing="5" alignment="CENTER_LEFT">
         <PasswordField fx:id="txtCredenciales" promptText="Clic para generar automáticamente" HBox.hgrow="ALWAYS" />

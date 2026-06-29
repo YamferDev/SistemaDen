@@ -3,6 +3,7 @@ package pe.edu.upeu.sysdenuncias.service;
 import pe.edu.upeu.sysdenuncias.model.Denuncia;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 
 public interface IDenunciaService extends ICrudGenericoService<Denuncia, Long> {
@@ -18,4 +19,5 @@ public interface IDenunciaService extends ICrudGenericoService<Denuncia, Long> {
     Map<String, Integer> obtenerEstadisticasPorTipo();
 
     Map<String, Integer> obtenerEstadisticasPorEstado();
+    List<Denuncia> findByFuncionario(Long funcionarioId);
 }

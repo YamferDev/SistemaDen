@@ -1,5 +1,6 @@
 package pe.edu.upeu.sysdenuncias.repository;
 
+import pe.edu.upeu.sysdenuncias.enums.Especialidad;
 import pe.edu.upeu.sysdenuncias.model.TipoDenuncia;
 
 import java.sql.Connection;
@@ -20,9 +21,14 @@ public class TipoDenunciaRepository extends AbstractJdbcRepository<TipoDenuncia,
 
     @Override
     protected TipoDenuncia insert(Connection connection, TipoDenuncia entity) throws SQLException {
-        long id = executeInsertGetKey(connection,
-                "INSERT INTO tipo_denuncia(nombre) VALUES(?)",
-                entity.getNombre()
+
+        long id = executeInsertGetKey(
+                connection,
+                "INSERT INTO tipo_denuncia(nombre, area_encargada) VALUES(?,?)",
+                entity.getNombre(),
+                entity.getAreaEncargada() != null
+                        ? entity.getAreaEncargada().name()
+                        : null
         );
         entity.setId(id);
         return entity;
@@ -30,11 +36,17 @@ public class TipoDenunciaRepository extends AbstractJdbcRepository<TipoDenuncia,
 
     @Override
     protected TipoDenuncia updateRow(Connection connection, TipoDenuncia entity) throws SQLException {
-        executeUpdate(connection,
-                "UPDATE tipo_denuncia SET nombre=? WHERE id=?",
+
+        executeUpdate(
+                connection,
+                "UPDATE tipo_denuncia SET nombre=?, area_encargada=? WHERE id=?",
                 entity.getNombre(),
+                entity.getAreaEncargada() != null
+                        ? entity.getAreaEncargada().name()
+                        : null,
                 entity.getId()
         );
+
         return entity;
     }
 
@@ -43,6 +55,12 @@ public class TipoDenunciaRepository extends AbstractJdbcRepository<TipoDenuncia,
         return TipoDenuncia.builder()
                 .id(rs.getLong("id"))
                 .nombre(rs.getString("nombre"))
-                .build();
+                .areaEncargada(
+                        rs.getString("area_encargada") != null
+                                ? Especialidad.valueOf(
+                                rs.getString("area_encargada")
+                        )
+                                : null
+                )                .build();
     }
 }

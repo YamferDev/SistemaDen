@@ -11,6 +11,7 @@ import pe.edu.upeu.sysdenuncias.components.ColumnInfo;
 import pe.edu.upeu.sysdenuncias.components.TableViewHelper;
 import pe.edu.upeu.sysdenuncias.components.Toast;
 import pe.edu.upeu.sysdenuncias.dto.SessionManager;
+import pe.edu.upeu.sysdenuncias.enums.Cargo;
 import pe.edu.upeu.sysdenuncias.enums.EstadoDenuncia;
 import pe.edu.upeu.sysdenuncias.model.*;
 import pe.edu.upeu.sysdenuncias.service.*;
@@ -27,6 +28,7 @@ public class DenunciaController {
     private final ICiudadanoService ciudadanoService;
     private final ITipoDenunciaService tipoDenunciaService;
     private final IEvidenciaService evidenciaService;
+    private final IFuncionarioService funcionarioService;
 
     private ObservableList<Denuncia> listarDenuncias;
 
@@ -40,22 +42,47 @@ public class DenunciaController {
     @FXML private Button btnGuardar;
     @FXML private TextField txtBuscar;
 
-    // FIX: usar null en vez de 0L para evitar problemas con autoboxing
     private Long idDenunciaEdit = null;
 
-    public DenunciaController(IDenunciaService denunciaService,
-                              ICiudadanoService ciudadanoService,
-                              ITipoDenunciaService tipoDenunciaService,
-                              IFuncionarioService funcionarioService,
-                              IEvidenciaService evidenciaService) {
+    public DenunciaController(
+            IDenunciaService denunciaService,
+            ICiudadanoService ciudadanoService,
+            ITipoDenunciaService tipoDenunciaService,
+            IFuncionarioService funcionarioService,
+            IEvidenciaService evidenciaService) {
+
         this.denunciaService = denunciaService;
         this.ciudadanoService = ciudadanoService;
         this.tipoDenunciaService = tipoDenunciaService;
+
+        this.funcionarioService = funcionarioService;
+
         this.evidenciaService = evidenciaService;
     }
 
     private void listar() {
-        listarDenuncias = FXCollections.observableArrayList(denunciaService.findAll());
+
+        Funcionario usuario =
+                SessionManager.getInstance()
+                        .getFuncionarioLogueado();
+
+        if (usuario.getCargo() == Cargo.INSPECTOR) {
+
+            listarDenuncias =
+                    FXCollections.observableArrayList(
+                            denunciaService.findByFuncionario(
+                                    usuario.getId()
+                            )
+                    );
+
+        } else {
+
+            listarDenuncias =
+                    FXCollections.observableArrayList(
+                            denunciaService.findAll()
+                    );
+        }
+
         tableView.setItems(listarDenuncias);
     }
 
@@ -72,8 +99,13 @@ public class DenunciaController {
                 setText(item == null || empty ? "" : item.getNombre() + " (" + item.getDni() + ")");
             }
         });
-        cbxCiudadano.setButtonCell(cbxCiudadano.getCellFactory().call(null));
-
+        cbxCiudadano.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Ciudadano item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(item == null || empty ? "" : item.getNombre() + " (" + item.getDni() + ")");
+            }
+        });
         cbxTipoDenuncia.setCellFactory(param -> new ListCell<>() {
             @Override
             protected void updateItem(TipoDenuncia item, boolean empty) {
@@ -81,8 +113,13 @@ public class DenunciaController {
                 setText(item == null || empty ? "" : item.getNombre());
             }
         });
-        cbxTipoDenuncia.setButtonCell(cbxTipoDenuncia.getCellFactory().call(null));
-
+        cbxTipoDenuncia.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(TipoDenuncia item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(item == null || empty ? "" : item.getNombre());
+            }
+        });
         TableViewHelper<Denuncia> tableViewHelper = new TableViewHelper<>();
         LinkedHashMap<String, ColumnInfo> columns = new LinkedHashMap<>();
         columns.put("ID", new ColumnInfo("id", 40.0));
@@ -192,7 +229,6 @@ public class DenunciaController {
     @FXML
     public void guardar() {
         try {
-            // FIX: Validar ANTES de construir el objeto
             if (cbxCiudadano.getValue() == null) {
                 Toast.showToast(null, "Seleccione un ciudadano", 2000, 500, 300);
                 return;
@@ -210,8 +246,27 @@ public class DenunciaController {
                 return;
             }
 
-            Funcionario fLogueado = SessionManager.getInstance().getFuncionarioLogueado();
+            TipoDenuncia tipoSeleccionado =
+                    cbxTipoDenuncia.getValue();
 
+            Funcionario inspectorAsignado =
+                    funcionarioService
+                            .findInspectorByEspecialidad(
+                                    tipoSeleccionado.getAreaEncargada()
+                            )
+                            .orElse(null);
+
+            if (inspectorAsignado == null) {
+                Toast.showToast(
+                        null,
+                        "No existe un inspector asignado al área "
+                                + tipoSeleccionado.getAreaEncargada(),
+                        3000,
+                        500,
+                        300
+                );
+                return;
+            }
             Denuncia denuncia = Denuncia.builder()
                     .descripcion(txtDescripcion.getText())
                     .ubicacion(txtUbicacion.getText())
@@ -219,8 +274,7 @@ public class DenunciaController {
                     .estado(cbxEstado.getValue() != null ? cbxEstado.getValue() : EstadoDenuncia.PENDIENTE)
                     .ciudadano(cbxCiudadano.getValue())
                     .tipoDenuncia(cbxTipoDenuncia.getValue())
-                    .funcionario(fLogueado)
-                    .fecha(LocalDate.now())
+                    .funcionario(inspectorAsignado)                    .fecha(LocalDate.now())
                     .build();
 
             if (idDenunciaEdit != null) {
