@@ -8,8 +8,6 @@ CREATE TABLE IF NOT EXISTS ciudadano (
     genero VARCHAR(15)
     );
 
-ALTER TABLE ciudadano ADD COLUMN IF NOT EXISTS correo VARCHAR(100);
-
 CREATE TABLE IF NOT EXISTS funcionario (
                                            id BIGINT AUTO_INCREMENT PRIMARY KEY,
                                            dni VARCHAR(8),
@@ -40,21 +38,6 @@ CREATE TABLE IF NOT EXISTS denuncia (
     FOREIGN KEY (funcionario_id) REFERENCES funcionario(id)
     );
 
-ALTER TABLE denuncia ADD COLUMN IF NOT EXISTS observacion TEXT;
-
-<<<<<<< HEAD
-MERGE INTO funcionario (id, nombre, cargo, credenciales)
-    KEY(id) VALUES (1, 'admin', 'ADMINISTRADOR', 'admin');
-
-CREATE TABLE IF NOT EXISTS evidencia (
-                                         id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                                         denuncia_id BIGINT NOT NULL, -- <--- TE FALTABA AGREGAR ESTA LÍNEA
-                                         nombre_archivo VARCHAR(255) NOT NULL,
-    ruta_archivo VARCHAR(255) NOT NULL,
-    tipo_archivo VARCHAR(100),
-    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (denuncia_id) REFERENCES denuncia(id)
-    );
 CREATE TABLE IF NOT EXISTS evidencia (
                                          id BIGINT AUTO_INCREMENT PRIMARY KEY,
                                          denuncia_id BIGINT NOT NULL,
@@ -62,22 +45,15 @@ CREATE TABLE IF NOT EXISTS evidencia (
     ruta_archivo VARCHAR(255) NOT NULL,
     tipo_archivo VARCHAR(100),
     fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    -- MODIFICA ESTA LÍNEA AGREANDO: ON DELETE CASCADE
     FOREIGN KEY (denuncia_id) REFERENCES denuncia(id) ON DELETE CASCADE
     );
 
-MERGE INTO tipo_denuncia (id, nombre)
+-- Insertar el funcionario administrador por defecto (credenciales: admin / admin)
 MERGE INTO funcionario (dni, nombre, cargo, especialidad, credenciales)
-    KEY(dni)
-    VALUES (
-    '00000000',
-    'admin',
-    'ADMINISTRADOR',
-    NULL,
-    'admin'
-    );
-MERGE INTO tipo_denuncia (id, nombre, area_encargada)
+    KEY(dni) VALUES ('00000000', 'admin', 'ADMINISTRADOR', NULL, 'admin');
 
+-- Insertar tipos de denuncia por defecto
+MERGE INTO tipo_denuncia (id, nombre, area_encargada)
     KEY(id) VALUES
     (1, 'Robo / Asalto', 'POLICIAL'),
     (2, 'Accidente de Tránsito', 'TRANSITO'),

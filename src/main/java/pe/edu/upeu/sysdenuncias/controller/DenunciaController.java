@@ -301,7 +301,7 @@ public class DenunciaController {
                     .estado(cbxEstado.getValue() != null ? cbxEstado.getValue() : EstadoDenuncia.PENDIENTE)
                     .ciudadano(cbxCiudadano.getValue())
                     .tipoDenuncia(cbxTipoDenuncia.getValue())
-                    .funcionario(inspectorAsignado)                    .fecha(LocalDate.now())
+                    .funcionario(inspectorAsignado)                    .fecha(java.time.LocalDateTime.now())
                     .build();
 
             Denuncia guardada; // Para capturar el objeto guardado con su ID

@@ -79,7 +79,7 @@ public class DenunciaRepository extends AbstractJdbcRepository<Denuncia, Long> {
         long id = executeInsertGetKey(connection,
                 "INSERT INTO denuncia(descripcion, fecha, ubicacion, estado, observacion, ciudadano_id, tipo_id, funcionario_id) VALUES(?,?,?,?,?,?,?,?)",
                 entity.getDescripcion(),
-                entity.getFecha() != null ? java.sql.Timestamp.valueOf(entity.getFecha().atStartOfDay()) : null,
+                entity.getFecha() != null ? java.sql.Timestamp.valueOf(entity.getFecha()) : null,
                 entity.getUbicacion(),
                 entity.getEstado() != null ? entity.getEstado().name() : null,
                 entity.getObservacion(),
@@ -96,7 +96,7 @@ public class DenunciaRepository extends AbstractJdbcRepository<Denuncia, Long> {
         executeUpdate(connection,
                 "UPDATE denuncia SET descripcion=?, fecha=?, ubicacion=?, estado=?, observacion=?, ciudadano_id=?, tipo_id=?, funcionario_id=? WHERE id=?",
                 entity.getDescripcion(),
-                entity.getFecha() != null ? java.sql.Timestamp.valueOf(entity.getFecha().atStartOfDay()) : null,
+                entity.getFecha() != null ? java.sql.Timestamp.valueOf(entity.getFecha()) : null,
                 entity.getUbicacion(),
                 entity.getEstado() != null ? entity.getEstado().name() : null,
                 entity.getObservacion(),
@@ -147,7 +147,7 @@ public class DenunciaRepository extends AbstractJdbcRepository<Denuncia, Long> {
         return Denuncia.builder()
                 .id(rs.getLong("d_id"))
                 .descripcion(rs.getString("descripcion"))
-                .fecha(rs.getTimestamp("fecha") != null ? rs.getTimestamp("fecha").toLocalDateTime().toLocalDate() : null)
+                .fecha(rs.getTimestamp("fecha") != null ? rs.getTimestamp("fecha").toLocalDateTime() : null)
                 .ubicacion(rs.getString("ubicacion"))
                 .estado(rs.getString("estado") != null ? EstadoDenuncia.valueOf(rs.getString("estado")) : null)
                 .observacion(rs.getString("observacion"))

@@ -26,7 +26,7 @@ public class Denuncia {
     @NotBlank(message = "La descripción de la denuncia es obligatoria")
     private String descripcion;
 
-    private LocalDate fecha;
+    private java.time.LocalDateTime fecha;
 
     @NotBlank(message = "La ubicación es obligatoria")
     private String ubicacion;
