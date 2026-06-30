@@ -152,6 +152,7 @@ public class CiudadanoController {
 
     private void deleteCiudadano(Ciudadano c) {
         ciudadanoService.delete(c.getId());
+
         listar();
         Toast.showToast(null, "Eliminado correctamente", 2000, 500, 300);
     }

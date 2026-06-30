@@ -44,17 +44,31 @@ public class DenunciaServiceImp extends CrudGenericoServiceImp<Denuncia, Long> i
         if (estadoAnterior != null && entity.getEstado() != null
                 && estadoAnterior != entity.getEstado()) {
 
-            String funcionarioNombre = (actualizada.getFuncionario() != null)
-                    ? actualizada.getFuncionario().getNombre()
-                    : "No asignado";
+            // Obtener el tipo de denuncia
+            String tipoDenunciaNombre = actualizada.getTipoDenuncia() != null
+                    ? actualizada.getTipoDenuncia().getNombre()
+                    : "General";
 
-            String mensaje = "Estimado/a " + actualizada.getCiudadano().getNombre() + ",\n" +
-                    "Le informamos que el estado de su denuncia (Código: " + actualizada.getId() + ") " +
-                    "ha cambiado de \"" + estadoAnterior.name() + "\" a \"" + actualizada.getEstado().name() + "\".\n" +
-                    "Funcionario a cargo: " + funcionarioNombre + ".";
+            // Obtener la observación
+            String observacion = (actualizada.getObservacion() != null && !actualizada.getObservacion().isBlank())
+                    ? actualizada.getObservacion()
+                    : "Sin observaciones adicionales.";
+
+            // Formatear el Nro de Trámite: Código (ej. 0004) y el año actual
+            int anio = actualizada.getFecha() != null ? actualizada.getFecha().getYear() : java.time.LocalDate.now().getYear();
+            String nroTramite = String.format("%04d-%d", actualizada.getId(), anio);
+
+            // Armar el mensaje personalizado
+            String mensaje = "🏛️ MUNICIPALIDAD - SISTEMA DE DENUNCIAS\n\n" +
+                    "Estimado(a) " + actualizada.getCiudadano().getNombre() + ",\n" +
+                    "Le informamos que el estado de su denuncia por '" + tipoDenunciaNombre + "' ha cambiado.\n\n" +
+                    "📌 Nro. de Trámite: " + nroTramite + "\n" +
+                    "🟢 Nuevo Estado: " + actualizada.getEstado().name() + "\n" +
+                    "📋 Observación: " + observacion;
 
             notificacionService.notificarCiudadano(actualizada.getCiudadano(), mensaje);
         }
+
 
         return actualizada;
     }
@@ -81,6 +95,7 @@ public class DenunciaServiceImp extends CrudGenericoServiceImp<Denuncia, Long> i
             Connection con = DatabaseConnection.getConnection();
             Map<String, Object> params = new HashMap<>();
             params.put("ID_DENUNCIA", idDenuncia);
+            params.put("BASE_DIR", new java.io.File("").getAbsolutePath());
 
             JasperReport jr = JasperCompileManager.compileReport(reportStream);
             JasperPrint jp = JasperFillManager.fillReport(jr, params, con);
@@ -131,18 +146,36 @@ public class DenunciaServiceImp extends CrudGenericoServiceImp<Denuncia, Long> i
 
     @Override
     public void enviarConstanciaWhatsapp(Long idDenuncia) {
-
         Denuncia denuncia = repo.findById(idDenuncia).orElseThrow();
 
-        String mensaje =
-                "Se ha generado la constancia de la denuncia N° "
-                        + denuncia.getId() + ".";
+        // Obtener el tipo de denuncia
+        String tipoDenunciaNombre = denuncia.getTipoDenuncia() != null
+                ? denuncia.getTipoDenuncia().getNombre()
+                : "General";
+
+        // Obtener la observación
+        String observacion = (denuncia.getObservacion() != null && !denuncia.getObservacion().isBlank())
+                ? denuncia.getObservacion()
+                : "Sin observaciones adicionales.";
+
+        // Formatear el Nro de Trámite
+        int anio = denuncia.getFecha() != null ? denuncia.getFecha().getYear() : java.time.LocalDate.now().getYear();
+        String nroTramite = String.format("%04d-%d", denuncia.getId(), anio);
+
+        // Armar el mensaje personalizado con emojis
+        String mensaje = "🏛️ MUNICIPALIDAD - SISTEMA DE DENUNCIAS\n\n" +
+                "Estimado(a) " + denuncia.getCiudadano().getNombre() + ",\n" +
+                "Le informamos que el estado de su denuncia por '" + tipoDenunciaNombre + "' ha cambiado.\n\n" +
+                "📌 Nro. de Trámite: " + nroTramite + "\n" +
+                "🟢 Nuevo Estado: " + (denuncia.getEstado() != null ? denuncia.getEstado().name() : "PENDIENTE") + "\n" +
+                "📋 Observación: " + observacion;
 
         notificacionService.notificarCiudadano(
                 denuncia.getCiudadano(),
                 mensaje
         );
     }
+
     @Override
     public File generarConstanciaPdfArchivo(Long idDenuncia) {
 
@@ -164,6 +197,7 @@ public class DenunciaServiceImp extends CrudGenericoServiceImp<Denuncia, Long> i
 
             Map<String, Object> params = new HashMap<>();
             params.put("ID_DENUNCIA", idDenuncia);
+            params.put("BASE_DIR", new java.io.File("").getAbsolutePath());
 
             JasperReport jr =
                     JasperCompileManager.compileReport(reportStream);

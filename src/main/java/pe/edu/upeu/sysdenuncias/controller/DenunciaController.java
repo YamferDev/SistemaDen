@@ -30,18 +30,28 @@ public class DenunciaController {
 
     private ObservableList<Denuncia> listarDenuncias;
 
-    @FXML private TextArea txtDescripcion;
-    @FXML private TextField txtUbicacion;
-    @FXML private ComboBox<Ciudadano> cbxCiudadano;
-    @FXML private ComboBox<TipoDenuncia> cbxTipoDenuncia;
-    @FXML private ComboBox<EstadoDenuncia> cbxEstado;
-    @FXML private TextArea txtObservacion;
-    @FXML private TableView<Denuncia> tableView;
-    @FXML private Button btnGuardar;
-    @FXML private TextField txtBuscar;
+    @FXML
+    private TextArea txtDescripcion;
+    @FXML
+    private TextField txtUbicacion;
+    @FXML
+    private ComboBox<Ciudadano> cbxCiudadano;
+    @FXML
+    private ComboBox<TipoDenuncia> cbxTipoDenuncia;
+    @FXML
+    private ComboBox<EstadoDenuncia> cbxEstado;
+    @FXML
+    private TextArea txtObservacion;
+    @FXML
+    private TableView<Denuncia> tableView;
+    @FXML
+    private Button btnGuardar;
+    @FXML
+    private TextField txtBuscar;
 
     // FIX: usar null en vez de 0L para evitar problemas con autoboxing
     private Long idDenunciaEdit = null;
+    private java.io.File archivoEvidenciaSeleccionado = null;
 
     public DenunciaController(IDenunciaService denunciaService,
                               ICiudadanoService ciudadanoService,
@@ -114,6 +124,7 @@ public class DenunciaController {
             private final MenuItem itemImprimir = new MenuItem("🖨 Imprimir");
             private final MenuItem itemCorreo = new MenuItem("📧 Correo");
             private final MenuItem itemWhatsapp = new MenuItem("💬 WhatsApp");
+
             {
                 btnConstancia.setStyle(
                         "-fx-background-color: #1565C0; " +
@@ -170,20 +181,35 @@ public class DenunciaController {
                 itemWhatsapp.setOnAction(event -> {
                     Denuncia data = getTableView().getItems().get(getIndex());
 
-                    Toast.showToast(
-                            null,
-                            "Envío por WhatsApp en implementación",
-                            3000,
-                            500,
-                            300
-                    );
+                    try {
+                        // 1. Llamamos al servicio para enviar por WhatsApp
+                        denunciaService.enviarConstanciaWhatsapp(data.getId());
+
+                        Toast.showToast(
+                                null,
+                                "Abriendo WhatsApp Web...",
+                                2000,
+                                500,
+                                300
+                        );
+                    } catch (Exception e) {
+                        Toast.showToast(
+                                null,
+                                "Error: " + e.getMessage(),
+                                3000,
+                                500,
+                                300
+                        );
+                    }
                 });
+
             }
 
             @Override
             public void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                setGraphic(empty ? null : new HBox(btnConstancia));            }
+                setGraphic(empty ? null : new HBox(btnConstancia));
+            }
         });
         actionColumn.setPrefWidth(140);
         tableView.getColumns().add(actionColumn);
@@ -192,7 +218,7 @@ public class DenunciaController {
     @FXML
     public void guardar() {
         try {
-            // FIX: Validar ANTES de construir el objeto
+            // Validaciones previas ... (Mantén tus validaciones de ciudadano, ubicación, descripción, etc.)
             if (cbxCiudadano.getValue() == null) {
                 Toast.showToast(null, "Seleccione un ciudadano", 2000, 500, 300);
                 return;
@@ -223,22 +249,37 @@ public class DenunciaController {
                     .fecha(LocalDate.now())
                     .build();
 
+            Denuncia guardada; // Para capturar el objeto guardado con su ID
+
             if (idDenunciaEdit != null) {
+                // Modo Edición: Solo actualiza los datos básicos, no guarda evidencias
                 denuncia.setId(idDenunciaEdit);
                 denunciaService.update(idDenunciaEdit, denuncia);
                 Toast.showToast(null, "Actualizado correctamente", 2000, 500, 300);
             } else {
-                denunciaService.save(denuncia);
+                // Modo Registro: Guarda la denuncia y luego asocia la evidencia
+                guardada = denunciaService.save(denuncia);
                 Toast.showToast(null, "Guardado correctamente", 2000, 500, 300);
+
+                // Guarda la evidencia solo al registrar la nueva denuncia
+                if (archivoEvidenciaSeleccionado != null) {
+                    Evidencia ev = Evidencia.builder()
+                            .denuncia(guardada)
+                            .build();
+                    evidenciaService.guardarConArchivo(ev, archivoEvidenciaSeleccionado);
+                    archivoEvidenciaSeleccionado = null; // Limpiar
+                }
             }
 
             limpiar();
             listar();
 
+
         } catch (Exception e) {
             System.err.println("Error al guardar: " + e.getMessage());
             Toast.showToast(null, "Error al guardar: " + e.getMessage(), 3000, 500, 300);
         }
+
     }
 
     private void editDenuncia(Denuncia d) {
@@ -273,15 +314,18 @@ public class DenunciaController {
         cbxTipoDenuncia.setValue(null);
         cbxEstado.setValue(EstadoDenuncia.PENDIENTE);
         idDenunciaEdit = null; // FIX: null en vez de 0L
+        archivoEvidenciaSeleccionado = null;
         btnGuardar.setText("Guardar");
     }
 
     @FXML
     public void subirEvidencia() {
-        if (idDenunciaEdit == null) {
-            Toast.showToast(null, "Primero selecciona una denuncia para editar", 2000, 500, 300);
+        // Bloqueo si se está editando
+        if (idDenunciaEdit != null) {
+            Toast.showToast(null, "Las evidencias solo se pueden subir al registrar una nueva denuncia", 2000, 500, 300);
             return;
         }
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Seleccionar Evidencia");
         fileChooser.getExtensionFilters().add(
@@ -289,16 +333,11 @@ public class DenunciaController {
         );
         File archivo = fileChooser.showOpenDialog(null);
         if (archivo != null) {
-            Evidencia ev = Evidencia.builder()
-                    .denuncia(Denuncia.builder().id(idDenunciaEdit).build())
-                    .build();
-            try {
-                evidenciaService.guardarConArchivo(ev, archivo);
-                Toast.showToast(null, "Evidencia subida correctamente", 2000, 500, 300);
-            } catch (RuntimeException e) {
-                Toast.showToast(null, e.getMessage(), 2000, 500, 300);
-            }
+            this.archivoEvidenciaSeleccionado = archivo;
+            Toast.showToast(null, "Archivo adjuntado: " + archivo.getName(), 2000, 500, 300);
         }
     }
+
 }
+
 

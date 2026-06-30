@@ -43,6 +43,26 @@ ALTER TABLE denuncia ADD COLUMN IF NOT EXISTS observacion TEXT;
 MERGE INTO funcionario (id, nombre, cargo, credenciales)
     KEY(id) VALUES (1, 'admin', 'ADMINISTRADOR', 'admin');
 
+CREATE TABLE IF NOT EXISTS evidencia (
+                                         id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                                         denuncia_id BIGINT NOT NULL, -- <--- TE FALTABA AGREGAR ESTA LÍNEA
+                                         nombre_archivo VARCHAR(255) NOT NULL,
+    ruta_archivo VARCHAR(255) NOT NULL,
+    tipo_archivo VARCHAR(100),
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (denuncia_id) REFERENCES denuncia(id)
+    );
+CREATE TABLE IF NOT EXISTS evidencia (
+                                         id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                                         denuncia_id BIGINT NOT NULL,
+                                         nombre_archivo VARCHAR(255) NOT NULL,
+    ruta_archivo VARCHAR(255) NOT NULL,
+    tipo_archivo VARCHAR(100),
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- MODIFICA ESTA LÍNEA AGREANDO: ON DELETE CASCADE
+    FOREIGN KEY (denuncia_id) REFERENCES denuncia(id) ON DELETE CASCADE
+    );
+
 MERGE INTO tipo_denuncia (id, nombre)
     KEY(id) VALUES
     (1, 'Robo / Asalto'),

@@ -42,7 +42,7 @@ public class NotificacionServiceImp implements INotificacionService {
 
         try {
             String mensajeCodificado = URLEncoder.encode(mensaje, StandardCharsets.UTF_8);
-            String url = "https://wa.me/" + telefonoLimpio + "?text=" + mensajeCodificado;
+            String url = "https://web.whatsapp.com/send?phone=" + telefonoLimpio + "&text=" + mensajeCodificado;
 
             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                 Desktop.getDesktop().browse(new URI(url));
