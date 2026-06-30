@@ -6,8 +6,11 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import pe.edu.upeu.sysdenuncias.dto.SessionManager;
+import pe.edu.upeu.sysdenuncias.enums.Cargo;
 import pe.edu.upeu.sysdenuncias.enums.EstadoDenuncia;
 import pe.edu.upeu.sysdenuncias.model.Denuncia;
+import pe.edu.upeu.sysdenuncias.model.Funcionario;
 import pe.edu.upeu.sysdenuncias.service.IDenunciaService;
 
 import java.time.format.DateTimeFormatter;
@@ -54,8 +57,24 @@ public class DashboardController {
 
     @FXML
     public void cargarDatos() {
-        List<Denuncia> denuncias = denunciaService.findAll();
+        Funcionario usuario =
+                SessionManager.getInstance()
+                        .getFuncionarioLogueado();
 
+        List<Denuncia> denuncias;
+
+        if (usuario.getCargo() == Cargo.INSPECTOR) {
+
+            denuncias =
+                    denunciaService.findByFuncionario(
+                            usuario.getId()
+                    );
+
+        } else {
+
+            denuncias =
+                    denunciaService.findAll();
+        }
         // Calcular métricas
         long nuevas = denuncias.stream()
                 .filter(d -> d.getEstado() == EstadoDenuncia.PENDIENTE)

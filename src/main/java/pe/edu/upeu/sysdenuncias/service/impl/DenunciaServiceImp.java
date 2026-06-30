@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class DenunciaServiceImp extends CrudGenericoServiceImp<Denuncia, Long> implements IDenunciaService {
@@ -212,6 +213,10 @@ public class DenunciaServiceImp extends CrudGenericoServiceImp<Denuncia, Long> i
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+    @Override
+    public List<Denuncia> findByFuncionario(Long funcionarioId) {
+        return repo.findByFuncionario(funcionarioId);
     }
 
 }

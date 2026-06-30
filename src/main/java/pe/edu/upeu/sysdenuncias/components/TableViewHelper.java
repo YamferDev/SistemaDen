@@ -61,7 +61,6 @@ public class TableViewHelper<T> {
                     private final Button btnDelete = new Button("Elim.");
 
                     {
-                        btnUpdate.getStyleClass().add("button-edit");
                         btnUpdate.setOnAction(event -> {
                             T data = getTableView().getItems().get(getIndex());
                             updateAction.accept(data);

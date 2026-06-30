@@ -15,12 +15,14 @@ CREATE TABLE IF NOT EXISTS funcionario (
                                            dni VARCHAR(8),
     nombre VARCHAR(100) NOT NULL,
     cargo VARCHAR(50) NOT NULL,
+    especialidad VARCHAR(50),
     credenciales VARCHAR(50) NOT NULL
     );
 
 CREATE TABLE IF NOT EXISTS tipo_denuncia (
                                              id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                                             nombre VARCHAR(100) NOT NULL
+                                             nombre VARCHAR(100) NOT NULL,
+    area_encargada VARCHAR(50) NOT NULL
     );
 
 CREATE TABLE IF NOT EXISTS denuncia (
@@ -40,6 +42,7 @@ CREATE TABLE IF NOT EXISTS denuncia (
 
 ALTER TABLE denuncia ADD COLUMN IF NOT EXISTS observacion TEXT;
 
+<<<<<<< HEAD
 MERGE INTO funcionario (id, nombre, cargo, credenciales)
     KEY(id) VALUES (1, 'admin', 'ADMINISTRADOR', 'admin');
 
@@ -64,9 +67,20 @@ CREATE TABLE IF NOT EXISTS evidencia (
     );
 
 MERGE INTO tipo_denuncia (id, nombre)
+MERGE INTO funcionario (dni, nombre, cargo, especialidad, credenciales)
+    KEY(dni)
+    VALUES (
+    '00000000',
+    'admin',
+    'ADMINISTRADOR',
+    NULL,
+    'admin'
+    );
+MERGE INTO tipo_denuncia (id, nombre, area_encargada)
+
     KEY(id) VALUES
-    (1, 'Robo / Asalto'),
-    (2, 'Accidente de Tránsito'),
-    (3, 'Vandalismo'),
-    (4, 'Violencia Familiar'),
-    (5, 'Fraude / Estafa');
+    (1, 'Robo / Asalto', 'POLICIAL'),
+    (2, 'Accidente de Tránsito', 'TRANSITO'),
+    (3, 'Vandalismo', 'POLICIAL'),
+    (4, 'Violencia Familiar', 'PSICOLOGIA'),
+    (5, 'Fraude / Estafa', 'LEGAL');

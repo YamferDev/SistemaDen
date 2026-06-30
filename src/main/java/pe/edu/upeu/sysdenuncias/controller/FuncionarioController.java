@@ -2,6 +2,7 @@ package pe.edu.upeu.sysdenuncias.controller;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import pe.edu.upeu.sysdenuncias.components.ColumnInfo;
@@ -9,6 +10,7 @@ import pe.edu.upeu.sysdenuncias.components.TableViewHelper;
 import pe.edu.upeu.sysdenuncias.components.Toast;
 import pe.edu.upeu.sysdenuncias.dto.SessionManager;
 import pe.edu.upeu.sysdenuncias.enums.Cargo;
+import pe.edu.upeu.sysdenuncias.enums.Especialidad;
 import pe.edu.upeu.sysdenuncias.model.Funcionario;
 import pe.edu.upeu.sysdenuncias.service.IFuncionarioService;
 
@@ -38,6 +40,11 @@ public class FuncionarioController {
     @FXML
     private Label lblContadorInspector;
     @FXML
+    private Label lblEspecialidad;
+
+    @FXML
+    private ComboBox<Especialidad> cbxEspecialidad;
+    @FXML
     private TextField txtCredencialesVisible;
     @FXML
     private Button btnVerPassword;
@@ -45,7 +52,7 @@ public class FuncionarioController {
     private Button btnCopiarPassword;
     private boolean passwordVisible = false;
 
-    private Long idFuncionarioEdit = 0L;
+    private Long idFuncionarioEdit = null;
 
     public FuncionarioController(IFuncionarioService funcionarioService) {
         this.funcionarioService = funcionarioService;
@@ -57,12 +64,26 @@ public class FuncionarioController {
             tableView.setItems(listarFuncionarios);
         }
         listarFuncionarios.setAll(funcionarioService.findAll());
+        listarFuncionarios.forEach(f -> System.out.println(" - " + f.getNombre() + " | " + f.getCargo()));
         actualizarContadores();
     }
     @FXML
     public void initialize() {
-        cbxCargo.setItems(FXCollections.observableArrayList(Cargo.values()));
 
+        cbxCargo.setItems(FXCollections.observableArrayList(Cargo.values()));
+        cbxEspecialidad.setItems(
+                FXCollections.observableArrayList(
+                        Especialidad.values()
+                )
+        );
+        txtDni.textProperty().addListener((obs, old, val) -> {
+            if (val == null || val.isEmpty()) return;
+            if (!val.matches("\\d*")) {
+                txtDni.setText(val.replaceAll("[^\\d]", ""));
+            } else if (val.length() > 8) {
+                txtDni.setText(val.substring(0, 8));
+            }
+        });
         btnVerPassword.setOnAction(e -> toggleVerPassword());
         btnCopiarPassword.setOnAction(e -> copiarPassword());
         TableViewHelper<Funcionario> tableViewHelper = new TableViewHelper<>();
@@ -94,6 +115,23 @@ public class FuncionarioController {
 
         });
         tableView.getColumns().add(colCargo);
+        TableColumn<Funcionario, Especialidad> colEspecialidad = new TableColumn<>("Especialidad");
+        colEspecialidad.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("especialidad"));
+        colEspecialidad.setPrefWidth(150);
+        colEspecialidad.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Especialidad especialidad, boolean empty) {
+                super.updateItem(especialidad, empty);
+                if (empty || especialidad == null) {
+                    setText("-");
+                    setStyle("");
+                } else {
+                    setText(especialidad.name());
+                    setStyle("-fx-text-fill: #2f9e44; -fx-background-color: #ebfbee; -fx-font-weight: bold; -fx-alignment: CENTER; -fx-background-radius: 4; -fx-padding: 3 10 3 10;");
+                }
+            }
+        });
+        tableView.getColumns().add(colEspecialidad);
 
         txtCredenciales.textProperty().bindBidirectional(txtCredencialesVisible.textProperty());
 
@@ -109,16 +147,23 @@ public class FuncionarioController {
 
         txtCredenciales.setDisable(true);
         txtCredencialesVisible.setDisable(true);
-        txtDni.textProperty().addListener((obs, old, val) -> {
-            if (!val.matches("\\d*")) {
-                txtDni.setText(val.replaceAll("[^\\d]", ""));
-            }
-            if (val.length() > 8) {
-                txtDni.setText(val.substring(0, 8));
-            }
-        });
+
         txtNombre.textProperty().addListener((obs, old, newVal) -> validarCamposParaCredenciales());
         cbxCargo.valueProperty().addListener((obs, old, newVal) -> validarCamposParaCredenciales());
+        cbxCargo.valueProperty().addListener((obs, old, cargo) -> {
+
+            boolean inspector =
+                    cargo == Cargo.INSPECTOR;
+
+            lblEspecialidad.setVisible(inspector);
+            lblEspecialidad.setManaged(inspector);
+
+            cbxEspecialidad.setVisible(inspector);
+            cbxEspecialidad.setManaged(inspector);
+
+            if (!inspector) {
+                cbxEspecialidad.setValue(null);            }
+        });
 
         txtCredenciales.setOnMouseClicked(event -> {
             if (txtCredenciales.getText().isBlank() && !txtCredenciales.isDisable()) {
@@ -133,14 +178,16 @@ public class FuncionarioController {
         if (logueado != null && logueado.getCargo() != Cargo.ADMINISTRADOR) {
             btnGuardar.setDisable(true);
         }
+        FilteredList<Funcionario> filteredList = new FilteredList<>(listarFuncionarios, p -> true);
+        tableView.setItems(filteredList);
         txtBuscar.textProperty().addListener((obs, old, val) -> {
-            String filtro = val.toLowerCase();
-            tableView.setItems(listarFuncionarios.filtered(f ->
-                    f.getNombre().toLowerCase().contains(filtro) ||
-                            f.getDni().toLowerCase().contains(filtro) ||
-                            f.getCargo().name().toLowerCase().contains(filtro)
-            ));
-            if (val.isBlank()) tableView.setItems(listarFuncionarios);
+            filteredList.setPredicate(f -> {
+                if (val == null || val.isBlank()) return true;
+                String filtro = val.toLowerCase();
+                return f.getNombre().toLowerCase().contains(filtro) ||
+                        f.getDni().toLowerCase().contains(filtro) ||
+                        f.getCargo().name().toLowerCase().contains(filtro);
+            });
         });
     }
 
@@ -163,11 +210,15 @@ public class FuncionarioController {
 
     @FXML
     public void guardar() {
-        if (txtDni.getText().isBlank() || !txtDni.getText().matches("\\d{8}")) {
-            Toast.showToast(null, "DNI debe tener 8 dígitos", 2000, 500, 300);
+        if (!txtDni.getText().matches("\\d{8}")) {
+            Toast.showToast(null,
+                    "DNI debe tener exactamente 8 dígitos",
+                    2000, 500, 300);
             return;
         }
         if (funcionarioService.existeConDni(txtDni.getText(), idFuncionarioEdit)) {
+            System.out.println("DNI duplicado detectado. DNI: " + txtDni.getText()
+                    + " | idExcluir: " + idFuncionarioEdit); // <-- agrega esto
             Toast.showToast(null, "Ya existe un funcionario con ese DNI", 2000, 500, 300);
             return;
         }
@@ -185,17 +236,22 @@ public class FuncionarioController {
         }
 
         try {
-            Funcionario funcionario = Funcionario.builder()
-                    .dni(txtDni.getText())
-                    .nombre(txtNombre.getText())
-                    .cargo(cbxCargo.getValue())
-                    .credenciales(txtCredenciales.getText())
-                    .build();
+            Funcionario funcionario =
+                    Funcionario.builder()
+                            .dni(txtDni.getText())
+                            .nombre(txtNombre.getText())
+                            .cargo(cbxCargo.getValue())
+                            .especialidad(
+                                    cbxCargo.getValue() == Cargo.INSPECTOR
+                                            ? cbxEspecialidad.getValue()
+                                            : null
+                            )
+                            .credenciales(txtCredenciales.getText())
+                            .build();
 
-            if (idFuncionarioEdit != 0L) {
+            if (idFuncionarioEdit != null) {
                 funcionario.setId(idFuncionarioEdit);
                 funcionarioService.update(idFuncionarioEdit, funcionario);
-                Toast.showToast(null, "Actualizado correctamente", 2000, 500, 300);
             } else {
                 funcionarioService.save(funcionario);
                 Toast.showToast(null, "Guardado correctamente", 2000, 500, 300);
@@ -205,32 +261,6 @@ public class FuncionarioController {
         } catch (Exception e) {
             System.err.println("Error al guardar: " + e.getMessage());
         }
-    }
-
-    private void editFuncionario(Funcionario f) {
-        idFuncionarioEdit = f.getId();
-        txtDni.setText(f.getDni());
-        txtNombre.setText(f.getNombre());
-        cbxCargo.setValue(f.getCargo());
-        txtCredenciales.setText(f.getCredenciales());
-        txtCredenciales.setDisable(false);
-        txtCredencialesVisible.setDisable(false);
-        btnGuardar.setText("Actualizar");
-    }
-
-    private void deleteFuncionario(Funcionario f) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                "¿Eliminar al funcionario " + f.getNombre() + "?",
-                ButtonType.YES, ButtonType.NO);
-        alert.setTitle("Confirmar eliminación");
-        alert.setHeaderText(null);
-        alert.showAndWait().ifPresent(r -> {
-            if (r == ButtonType.YES) {
-                funcionarioService.delete(f.getId());
-                listar();
-                Toast.showToast(null, "Eliminado correctamente", 2000, 500, 300);
-            }
-        });
     }
     @FXML
     public void limpiar() {
@@ -248,9 +278,47 @@ public class FuncionarioController {
         txtCredencialesVisible.setManaged(false);
         passwordVisible = false;
         btnVerPassword.setText("ver");
+        cbxEspecialidad.setValue(null);
+        lblEspecialidad.setVisible(false);
+        lblEspecialidad.setManaged(false);
 
-        idFuncionarioEdit = 0L;
+        cbxEspecialidad.setVisible(false);
+        cbxEspecialidad.setManaged(false);
+        idFuncionarioEdit = null;
         btnGuardar.setText("Guardar");
+        txtDni.setDisable(false);
+        txtDni.setEditable(true);
+        txtNombre.setDisable(false);
+        txtNombre.setEditable(true);
+    }
+
+    private void editFuncionario(Funcionario f) {
+        idFuncionarioEdit = f.getId();
+        txtDni.setText(f.getDni());
+        txtNombre.setText(f.getNombre());
+        cbxCargo.setValue(f.getCargo());
+        txtCredenciales.setText(f.getCredenciales());
+        txtCredenciales.setDisable(false);
+        txtCredencialesVisible.setDisable(false);
+        btnGuardar.setText("Actualizar");
+        cbxEspecialidad.setValue(
+                f.getEspecialidad()
+        );
+    }
+
+    private void deleteFuncionario(Funcionario f) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                "¿Eliminar al funcionario " + f.getNombre() + "?",
+                ButtonType.YES, ButtonType.NO);
+        alert.setTitle("Confirmar eliminación");
+        alert.setHeaderText(null);
+        alert.showAndWait().ifPresent(r -> {
+            if (r == ButtonType.YES) {
+                funcionarioService.delete(f.getId());
+                listar();
+                Toast.showToast(null, "Eliminado correctamente", 2000, 500, 300);
+            }
+        });
     }
 
     private String generarPassword() {

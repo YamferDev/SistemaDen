@@ -7,6 +7,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
+<?import javafx.scene.control.ComboBox?>
 <HBox spacing="20" style="-fx-padding: 20;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="pe.edu.upeu.sysdenuncias.controller.TipoDenunciaController">
 
     
@@ -15,6 +16,9 @@
         
         <Label text="Nombre del Tipo de Denuncia:" />
         <TextField fx:id="txtNombre" promptText="Ej: Robo, Accidente..." />
+        <Label text="Área Encargada:" />
+        <Label text="Área Encargada:" />
+        <ComboBox fx:id="cbxArea" prefWidth="260" promptText="Seleccione área" />
         
         <HBox spacing="10" style="-fx-padding: 15 0 0 0;">
             <Button fx:id="btnGuardar" text="Guardar" onAction="#guardar" prefWidth="120" />

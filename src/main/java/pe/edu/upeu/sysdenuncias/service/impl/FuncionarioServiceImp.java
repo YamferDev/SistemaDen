@@ -1,5 +1,6 @@
 package pe.edu.upeu.sysdenuncias.service.impl;
 
+import pe.edu.upeu.sysdenuncias.enums.Especialidad;
 import pe.edu.upeu.sysdenuncias.model.Funcionario;
 import pe.edu.upeu.sysdenuncias.repository.FuncionarioRepository;
 import pe.edu.upeu.sysdenuncias.repository.ICrudGenericoRepository;
@@ -29,5 +30,14 @@ public class FuncionarioServiceImp extends CrudGenericoServiceImp<Funcionario, L
     @Override
     public boolean existeConDni(String dni, Long excludeId) {
         return repo.existeConDni(dni, excludeId);
+
     }
+
+    @Override
+    public Optional<Funcionario> findInspectorByEspecialidad(
+            Especialidad especialidad) {
+
+        return repo.findInspectorByEspecialidad(especialidad);
+    }
+
 }

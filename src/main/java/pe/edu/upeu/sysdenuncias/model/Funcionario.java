@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import pe.edu.upeu.sysdenuncias.enums.Cargo;
+import pe.edu.upeu.sysdenuncias.enums.Especialidad;
 
 
 @Data
@@ -23,6 +24,6 @@ public class Funcionario {
     @NotBlank(message = "El cargo es obligatorio")
     private Cargo cargo;
 
-    @NotBlank(message = "Las credenciales (contraseña) son obligatorias")
+    private Especialidad especialidad;
     private String credenciales;
 }
